@@ -31,7 +31,7 @@ class Searchbar extends Component {
       styles;
 
     return (
-      <div className={Searchbar}>
+      <header className={Searchbar}>
         <form className={SearchForm} onSubmit={this.handleSubmit}>
           <button
             className={SearchForm__button}
@@ -45,14 +45,15 @@ class Searchbar extends Component {
             type="text"
             name="search"
             autoComplete="off"
-            placeholder="input search query"
+            autoFocus
+            placeholder="Search images and photos"
             title="field for entering search query"
             value={search}
             onChange={this.handlerInputChange}
             required
           />
         </form>
-      </div>
+      </header>
     );
   }
 }

@@ -22,7 +22,6 @@ class App extends Component {
     return (
       <div className={styles.App}>
         <Searchbar onSubmit={this.submitFormHandler} />
-        {status === 'pending' && <Loader />}
         <ImageGallery searchQuery={searchQuery} />
       </div>
     );
