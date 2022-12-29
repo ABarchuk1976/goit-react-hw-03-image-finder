@@ -13,7 +13,7 @@ class App extends Component {
   };
 
   submitFormHandler = ({ search }) => {
-    this.setState({ searchQuery: search });
+    this.setState({ searchQuery: search.trim().toLowerCase() });
   };
 
   render() {

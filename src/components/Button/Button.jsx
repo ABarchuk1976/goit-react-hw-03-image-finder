@@ -2,13 +2,12 @@ import styles from './Button.module.css';
 import PropTypes from 'prop-types';
 
 const Button = ({ page, onClick }) => (
-  <button className={styles.buttonMore} onClick={() => onClick(page)}>
+  <button className={styles.buttonMore} onClick={onClick}>
     Load more
   </button>
 );
 
 Button.propTypes = {
-  page: PropTypes.number.isRequired,
   onClick: PropTypes.func.isRequired,
 };
 

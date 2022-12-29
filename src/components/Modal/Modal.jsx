@@ -1,20 +1,42 @@
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import styles from './Modal.module.css';
 
-const Modal = ({ largeImg, tags }) => {
-  const { overlay, modal } = styles;
-  return (
-    <div class={overlay}>
-      <div class={modal}>
-        <img src={largeImg} alt={tags} />
-      </div>
-    </div>
-  );
-};
+class Modal extends Component {
+  static propTypes = {
+    children: PropTypes.node,
+    onClose: PropTypes.func.isRequired,
+  };
 
-Modal.propTypes = {
-  largeImg: PropTypes.string.isRequired,
-  tags: PropTypes.string.isRequired,
-};
+  componentDidMount() {
+    window.addEventListener('keydown', this.handelKeyClose);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.handelKeyClose);
+  }
+
+  handelKeyClose = evt => {
+    if (evt.code === 'Escape') {
+      this.props.onClose();
+    }
+  };
+
+  handelClose = evt => {
+    if (evt.target === evt.currentTarget) {
+      this.props.onClose();
+    }
+  };
+
+  render() {
+    const { overlay, modal } = styles;
+    const { children } = this.props;
+    return (
+      <div className={overlay} onClick={this.handelClose}>
+        <div className={modal}>{children}</div>
+      </div>
+    );
+  }
+}
 
 export default Modal;

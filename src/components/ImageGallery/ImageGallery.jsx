@@ -10,7 +10,7 @@ const INITIAL_STATE = {
   images: [],
   loading: false,
   error: '',
-  isModalOpen: false,
+  currentId: null,
 };
 
 // idle, pending, resolved, reject
@@ -21,18 +21,20 @@ class ImageGallery extends Component {
 
   state = { ...INITIAL_STATE };
 
-  componentDidUpdate(prevProps, _) {
-    console.log(prevProps.searchQuery, this.props.searchQuery);
-    if (prevProps.searchQuery !== this.props.searchQuery) {
-      this.setState({ ...INITIAL_STATE });
-      this.getImagesHandler(1);
-    }
-  }
-
   currentPage = 1;
   totalPages = 0;
 
-  getImagesHandler = page => {
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.searchQuery !== this.props.searchQuery) {
+      this.setState({ ...INITIAL_STATE });
+      this.currentPage = 1;
+      this.totalPages = 0;
+      this.setState({ loading: true });
+      setTimeout(() => this.fetchImages(this.currentPage), 500);
+    }
+  }
+
+  fetchImages = page => {
     const { searchQuery } = this.props;
     const API = 'https://pixabay.com/api/';
     const KEY = '13063741-5515a23bced967f7d7ac2fd10';
@@ -49,18 +51,16 @@ class ImageGallery extends Component {
     };
     const searchAPI = API + '?' + new URLSearchParams(params);
 
-    this.setState({ loading: true });
-
     fetch(searchAPI)
       .then(response => {
         if (response.ok) {
           return response.json();
         }
-        return Promise.reject(new Error('No photos for this request'));
+        return Promise.reject(new Error('No photos for this request.'));
       })
       .then(({ hits, totalHits }) => {
         if (!hits.length) {
-          return Promise.reject(new Error('No photos for this request'));
+          return Promise.reject(new Error('No photos for this request.'));
         }
 
         if (page === 1) {
@@ -68,8 +68,6 @@ class ImageGallery extends Component {
             Math.trunc(totalHits / PER_PAGE) + !!(totalHits % PER_PAGE);
           this.currentPage = 1;
         }
-
-        this.currentPage += 1;
 
         this.setState(prevState => ({
           images: [...prevState.images, ...hits],
@@ -83,33 +81,60 @@ class ImageGallery extends Component {
       .finally(this.setState({ loading: false }));
   };
 
-  handleToggle = () => {
-    this.setState(prevState => ({ isModalOpen: !prevState.isModalOpen }));
+  nextPageHandler = () => {
+    this.currentPage += 1;
+    this.setState({ loading: true });
+    setTimeout(() => this.fetchImages(this.currentPage), 500);
   };
 
+  closeHandler = () => {
+    this.setState({ currentId: null });
+  };
+
+  clickImgHandler = evt => {
+    const { nodeName, id } = evt.target;
+
+    if (nodeName === 'IMG') this.setState({ currentId: id });
+  };
+
+  getLargeImgData() {
+    const { images, currentId } = this.state;
+
+    return images.filter(image => String(image.id) === currentId)[0];
+  }
+
   render() {
-    const { images, error, loading, isModalOpen } = this.state;
     const { ImageGallery } = styles;
+    const { images, error, loading, currentId } = this.state;
+    const activeImage = this.getLargeImgData();
+
     return (
       <>
         {error && <p>{error}</p>}
-
-        {isModalOpen && <Modal>modal</Modal>}
-
-        <ul className={ImageGallery}>
-          {images.map(({ id, tags, webformatURL, largeImageURL }) => (
+        {currentId && (
+          <Modal onClose={this.closeHandler}>
+            <img
+              src={activeImage.largeImageURL}
+              alt={activeImage.tags}
+              width="800"
+              height="600"
+            />
+          </Modal>
+        )}
+        <ul className={ImageGallery} onClick={this.clickImgHandler}>
+          {images.map(({ id, tags, webformatURL }) => (
             <ImageGalleryItem
+              key={id}
               id={id}
               tags={tags}
               webformatURL={webformatURL}
-              largeImg={largeImageURL}
-              onClick={this.handleToggle}
             />
           ))}
         </ul>
+
         {loading && <Loader />}
         {this.currentPage < this.totalPages && (
-          <Button page={this.currentPage} onClick={this.getImagesHandler} />
+          <Button onClick={this.nextPageHandler} />
         )}
       </>
     );
