@@ -4,11 +4,13 @@ import styles from './ImageGallery.module.css';
 import Loader from 'components/Loader';
 import Button from 'components/Button';
 import ImageGalleryItem from 'components/ImageGalleryItem';
+import Modal from 'components/Modal';
 
 const INITIAL_STATE = {
   images: [],
+  loading: false,
   error: '',
-  status: 'idle',
+  isModalOpen: false,
 };
 
 // idle, pending, resolved, reject
@@ -47,65 +49,70 @@ class ImageGallery extends Component {
     };
     const searchAPI = API + '?' + new URLSearchParams(params);
 
+    this.setState({ loading: true });
+
     fetch(searchAPI)
       .then(response => {
         if (response.ok) {
           return response.json();
         }
-
         return Promise.reject(new Error('No photos for this request'));
       })
       .then(({ hits, totalHits }) => {
+        if (!hits.length) {
+          return Promise.reject(new Error('No photos for this request'));
+        }
+
         if (page === 1) {
           this.totalPages =
             Math.trunc(totalHits / PER_PAGE) + !!(totalHits % PER_PAGE);
           this.currentPage = 1;
         }
+
         this.currentPage += 1;
+
         this.setState(prevState => ({
           images: [...prevState.images, ...hits],
-          status: 'resolved',
         }));
       })
       .catch(error => {
-        this.setState({ error, images: [], status: 'rejected' });
+        this.setState({ error: error.message });
         this.totalPages = 0;
         this.currentPage = 1;
-      });
+      })
+      .finally(this.setState({ loading: false }));
+  };
+
+  handleToggle = () => {
+    this.setState(prevState => ({ isModalOpen: !prevState.isModalOpen }));
   };
 
   render() {
-    const { images, status } = this.state;
+    const { images, error, loading, isModalOpen } = this.state;
     const { ImageGallery } = styles;
+    return (
+      <>
+        {error && <p>{error}</p>}
 
-    if (status === 'idle') return;
+        {isModalOpen && <Modal>modal</Modal>}
 
-    if (status === 'pending') {
-      return <Loader />;
-    }
-
-    if (status === 'rejected') {
-      return <></>;
-    }
-
-    if (status === 'resolved') {
-      return (
-        <>
-          <ul className={ImageGallery}>
-            {images.map(({ id, tags, webformatURL }) => (
-              <ImageGalleryItem
-                id={id}
-                tags={tags}
-                webformatURL={webformatURL}
-              />
-            ))}
-          </ul>
-          {this.currentPage < this.totalPages && (
-            <Button page={this.currentPage} onClick={this.getImagesHandler} />
-          )}
-        </>
-      );
-    }
+        <ul className={ImageGallery}>
+          {images.map(({ id, tags, webformatURL, largeImageURL }) => (
+            <ImageGalleryItem
+              id={id}
+              tags={tags}
+              webformatURL={webformatURL}
+              largeImg={largeImageURL}
+              onClick={this.handleToggle}
+            />
+          ))}
+        </ul>
+        {loading && <Loader />}
+        {this.currentPage < this.totalPages && (
+          <Button page={this.currentPage} onClick={this.getImagesHandler} />
+        )}
+      </>
+    );
   }
 }
 

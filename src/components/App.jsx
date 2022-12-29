@@ -12,33 +12,9 @@ class App extends Component {
     searchQuery: '',
   };
 
-  // componentDidMount() {
-  //   const parsedContacts = JSON.parse(localStorage.getItem('contacts'));
-  //   if (parsedContacts) this.setState({ contacts: [...parsedContacts] });
-  // }
-
-  // componentDidUpdate(prevProps, prevState) {
-  //   const { contacts } = this.state;
-
-  //   if (prevState.contacts !== contacts)
-  //     contacts.length
-  //       ? localStorage.setItem('contacts', JSON.stringify(contacts))
-  //       : localStorage.removeItem('contacts');
-  // }
-
   submitFormHandler = ({ search }) => {
     this.setState({ searchQuery: search });
   };
-
-  // filterChangeHandler = evt => {
-  //   const normalizedStr = evt.target.value.trim().toLowerCase();
-  //   this.setState({ filter: normalizedStr });
-  // };
-
-  // deleteContactHandler = id => {
-  //   const { contacts } = this.state;
-  //   this.setState({ contacts: contacts.filter(contact => contact.id !== id) });
-  // };
 
   render() {
     const { searchQuery, status } = this.state;
