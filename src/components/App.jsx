@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-// import shortid from 'shortid';
 
 import styles from './App.module.css';
 import ImageGallery from './ImageGallery';

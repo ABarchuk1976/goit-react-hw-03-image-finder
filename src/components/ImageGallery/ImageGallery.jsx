@@ -1,5 +1,6 @@
 import React, { Component, Fragment } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import PropTypes from 'prop-types';
 import styles from './ImageGallery.module.css';
 import Loader from 'components/Loader';
@@ -7,8 +8,8 @@ import Button from 'components/Button';
 import ImageGalleryItem from 'components/ImageGalleryItem';
 import Modal from 'components/Modal';
 
-import { PER_PAGE, searchAPI } from 'services/images.service.js';
-import { INITIAL_STATE } from 'constants/initState.constants.js';
+import { fetchImages } from 'services/images-api.service.js';
+import { PER_PAGE } from 'constants/images-api.constants.js';
 
 // idle, pending, resolved, reject
 class ImageGallery extends Component {
@@ -16,66 +17,79 @@ class ImageGallery extends Component {
     searchQuery: PropTypes.string.isRequired,
   };
 
-  state = { ...INITIAL_STATE };
+  state = {
+    images: [],
+    loading: false,
+    currentId: null,
+    page: null,
+    error: false,
+  };
 
   totalPages = 0;
+
+  componentDidMount() {
+    this.setState({ page: 1 });
+  }
 
   componentDidUpdate(prevProps, prevState) {
     const { searchQuery } = this.props;
     const { page } = this.state;
+    const changedSearch = prevProps.searchQuery !== searchQuery;
+    const changedPage = prevState.page !== page;
+    let changesState = {};
+    const initialStates = {
+      images: [],
+      loading: false,
+      currentId: null,
+      page: null,
+      error: false,
+    };
 
-    if (prevProps.searchQuery !== searchQuery) {
-      this.setState({ ...INITIAL_STATE });
-      this.setState({ loading: true });
-      setTimeout(() => this.fetchImages(), 500);
+    if (changedSearch || changedPage) {
+      changesState = changedPage
+        ? { ...initialStates, page }
+        : { ...initialStates };
+
+      changesState = { ...changesState, loading: true };
+
+      this.setState(changesState);
+
+      setTimeout(
+        () =>
+          fetchImages(searchQuery, page)
+            .then(({ hits, totalHits }) => {
+              if (!hits.length) {
+                return Promise.reject(
+                  new Error(`No photos for serch query: ${searchQuery}`)
+                );
+              }
+
+              if (page === 1) {
+                this.totalPages =
+                  Math.trunc(totalHits / PER_PAGE) + !!(totalHits % PER_PAGE);
+              }
+
+              const newImages = hits.map(
+                ({ id, tags, webformatURL, largeImageURL }) => ({
+                  id,
+                  tags,
+                  webformatURL,
+                  largeImageURL,
+                })
+              );
+              this.setState(prevState => ({
+                images: [...prevState.images, ...newImages],
+              }));
+            })
+            .catch(error => {
+              toast.error(error.message);
+              this.totalPages = 0;
+              this.setState({ page: null, images: [], error: true });
+            })
+            .finally(this.setState({ loading: false })),
+        500
+      );
     }
-
-    if (prevState.page !== page) {
-      this.setState({ loading: true });
-      setTimeout(() => this.fetchImages(page), 500);
-    }
-  }
-
-  fetchImages(currentPage = 1) {
-    const { searchQuery } = this.props;
-
-    fetch(searchAPI(currentPage, searchQuery))
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        return Promise.reject(new Error('No photos for this request.'));
-      })
-      .then(({ hits, totalHits }) => {
-        if (!hits.length) {
-          return Promise.reject(new Error('No photos for this request.'));
-        }
-
-        if (currentPage === 1) {
-          this.totalPages =
-            Math.trunc(totalHits / PER_PAGE) + !!(totalHits % PER_PAGE);
-        }
-
-        const newImages = hits.map(
-          ({ id, tags, webformatURL, largeImageURL }) => ({
-            id,
-            tags,
-            webformatURL,
-            largeImageURL,
-          })
-        );
-        this.setState(prevState => ({
-          images: [...prevState.images, ...newImages],
-        }));
-      })
-      .catch(error => {
-        toast.error(error.message);
-
-        this.setState({ error: true });
-        this.totalPages = 0;
-        this.setState({ ...INITIAL_STATE });
-      })
-      .finally(this.setState({ loading: false }));
   }
 
   nextPageHandler = () => {
@@ -102,7 +116,7 @@ class ImageGallery extends Component {
 
   render() {
     const { ImageGallery } = styles;
-    const { images, loading, currentId } = this.state;
+    const { images, loading, currentId, error } = this.state;
     const activeImage = this.getLargeImgData();
 
     return (
@@ -133,18 +147,7 @@ class ImageGallery extends Component {
         {!loading && this.state.page < this.totalPages && (
           <Button onClick={this.nextPageHandler} />
         )}
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="colored"
-        />
+        {error && <ToastContainer autoClose={3000} closeOnClick />}
       </>
     );
   }
