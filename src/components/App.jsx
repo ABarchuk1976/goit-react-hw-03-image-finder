@@ -3,7 +3,6 @@ import React, { Component } from 'react';
 
 import styles from './App.module.css';
 import ImageGallery from './ImageGallery';
-import Loader from './Loader';
 import Searchbar from './Searchbar';
 
 // idle, pending, resolved, reject, modal
@@ -17,12 +16,12 @@ class App extends Component {
   };
 
   render() {
-    const { searchQuery, status } = this.state;
+    const { searchQuery } = this.state;
 
     return (
       <div className={styles.App}>
         <Searchbar onSubmit={this.submitFormHandler} />
-        <ImageGallery searchQuery={searchQuery} />
+        {searchQuery && <ImageGallery searchQuery={searchQuery} />}
       </div>
     );
   }

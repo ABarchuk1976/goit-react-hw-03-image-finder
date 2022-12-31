@@ -1,4 +1,5 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import styles from './ImageGallery.module.css';
 import Loader from 'components/Loader';
@@ -6,12 +7,8 @@ import Button from 'components/Button';
 import ImageGalleryItem from 'components/ImageGalleryItem';
 import Modal from 'components/Modal';
 
-const INITIAL_STATE = {
-  images: [],
-  loading: false,
-  error: '',
-  currentId: null,
-};
+import { PER_PAGE, searchAPI } from 'services/images.service.js';
+import { INITIAL_STATE } from 'constants/initState.constants.js';
 
 // idle, pending, resolved, reject
 class ImageGallery extends Component {
@@ -21,37 +18,28 @@ class ImageGallery extends Component {
 
   state = { ...INITIAL_STATE };
 
-  currentPage = 1;
   totalPages = 0;
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevProps.searchQuery !== this.props.searchQuery) {
+    const { searchQuery } = this.props;
+    const { page } = this.state;
+
+    if (prevProps.searchQuery !== searchQuery) {
       this.setState({ ...INITIAL_STATE });
-      this.currentPage = 1;
-      this.totalPages = 0;
       this.setState({ loading: true });
-      setTimeout(() => this.fetchImages(this.currentPage), 500);
+      setTimeout(() => this.fetchImages(), 500);
+    }
+
+    if (prevState.page !== page) {
+      this.setState({ loading: true });
+      setTimeout(() => this.fetchImages(page), 500);
     }
   }
 
-  fetchImages = page => {
+  fetchImages(currentPage = 1) {
     const { searchQuery } = this.props;
-    const API = 'https://pixabay.com/api/';
-    const KEY = '13063741-5515a23bced967f7d7ac2fd10';
-    const TYPE = 'photo';
-    const ORIENTATION = 'horizontal';
-    const PER_PAGE = 12;
-    const params = {
-      q: searchQuery,
-      page: page,
-      key: KEY,
-      image_type: TYPE,
-      orientation: ORIENTATION,
-      per_page: PER_PAGE,
-    };
-    const searchAPI = API + '?' + new URLSearchParams(params);
 
-    fetch(searchAPI)
+    fetch(searchAPI(currentPage, searchQuery))
       .then(response => {
         if (response.ok) {
           return response.json();
@@ -59,14 +47,14 @@ class ImageGallery extends Component {
         return Promise.reject(new Error('No photos for this request.'));
       })
       .then(({ hits, totalHits }) => {
+        console.log(hits);
         if (!hits.length) {
           return Promise.reject(new Error('No photos for this request.'));
         }
 
-        if (page === 1) {
+        if (currentPage === 1) {
           this.totalPages =
             Math.trunc(totalHits / PER_PAGE) + !!(totalHits % PER_PAGE);
-          this.currentPage = 1;
         }
 
         this.setState(prevState => ({
@@ -74,17 +62,18 @@ class ImageGallery extends Component {
         }));
       })
       .catch(error => {
-        this.setState({ error: error.message });
+        toast.error('Error: ', error.message);
+        this.setState({ error: true });
         this.totalPages = 0;
-        this.currentPage = 1;
+        this.setState({ ...INITIAL_STATE });
       })
       .finally(this.setState({ loading: false }));
-  };
+  }
 
   nextPageHandler = () => {
-    this.currentPage += 1;
-    this.setState({ loading: true });
-    setTimeout(() => this.fetchImages(this.currentPage), 500);
+    this.setState(prevState => ({
+      page: prevState.page + 1,
+    }));
   };
 
   closeHandler = () => {
@@ -104,13 +93,14 @@ class ImageGallery extends Component {
   }
 
   render() {
+    console.log('Total pages: ', this.totalPages);
     const { ImageGallery } = styles;
-    const { images, error, loading, currentId } = this.state;
+    const { images, loading, currentId, error } = this.state;
     const activeImage = this.getLargeImgData();
+    console.log('Props at Gallery', this.props.searchQuery);
 
     return (
       <>
-        {error && <p>{error}</p>}
         {currentId && (
           <Modal onClose={this.closeHandler}>
             <img
@@ -121,6 +111,7 @@ class ImageGallery extends Component {
             />
           </Modal>
         )}
+
         <ul className={ImageGallery} onClick={this.clickImgHandler}>
           {images.map(({ id, tags, webformatURL }) => (
             <ImageGalleryItem
@@ -133,8 +124,19 @@ class ImageGallery extends Component {
         </ul>
 
         {loading && <Loader />}
-        {this.currentPage < this.totalPages && (
+        {this.state.page < this.totalPages && (
           <Button onClick={this.nextPageHandler} />
+        )}
+        {error && (
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            newestOnTop={true}
+            closeOnClick={true}
+            draggable={true}
+            pauseOnHover={true}
+            theme="light"
+          />
         )}
       </>
     );
