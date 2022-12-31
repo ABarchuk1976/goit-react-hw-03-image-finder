@@ -132,16 +132,18 @@ class ImageGallery extends Component {
           </Modal>
         )}
 
-        <ul className={ImageGallery} onClick={this.clickImgHandler}>
-          {images.map(({ id, tags, webformatURL }) => (
-            <ImageGalleryItem
-              key={id}
-              id={id}
-              tags={tags}
-              webformatURL={webformatURL}
-            />
-          ))}
-        </ul>
+        {!error && (
+          <ul className={ImageGallery} onClick={this.clickImgHandler}>
+            {images.map(({ id, tags, webformatURL }) => (
+              <ImageGalleryItem
+                key={id}
+                id={id}
+                tags={tags}
+                webformatURL={webformatURL}
+              />
+            ))}
+          </ul>
+        )}
 
         {loading && <Loader />}
         {!loading && this.state.page < this.totalPages && (
