@@ -11,7 +11,6 @@ import Modal from 'components/Modal';
 import { fetchImages } from 'services/images-api.service.js';
 import { PER_PAGE } from 'constants/images-api.constants.js';
 
-// idle, pending, resolved, reject
 class ImageGallery extends Component {
   static propTypes = {
     searchQuery: PropTypes.string.isRequired,
@@ -60,7 +59,7 @@ class ImageGallery extends Component {
             .then(({ hits, totalHits }) => {
               if (!hits.length) {
                 return Promise.reject(
-                  new Error(`No photos for serch query: ${searchQuery}`)
+                  new Error(`No photos for search query: ${searchQuery}`)
                 );
               }
 
@@ -146,9 +145,11 @@ class ImageGallery extends Component {
         )}
 
         {loading && <Loader />}
+
         {!loading && this.state.page < this.totalPages && (
           <Button onClick={this.nextPageHandler} />
         )}
+
         {error && <ToastContainer autoClose={3000} closeOnClick />}
       </>
     );
