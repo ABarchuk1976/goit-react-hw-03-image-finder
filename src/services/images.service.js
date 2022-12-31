@@ -4,7 +4,7 @@ export const TYPE = 'photo';
 export const ORIENTATION = 'horizontal';
 export const PER_PAGE = 12;
 
-export const searchAPI = (searchQuery, page) => {
+export const searchAPI = (page, searchQuery) => {
   const params = {
     q: searchQuery,
     page,

@@ -47,7 +47,6 @@ class ImageGallery extends Component {
         return Promise.reject(new Error('No photos for this request.'));
       })
       .then(({ hits, totalHits }) => {
-        console.log(hits);
         if (!hits.length) {
           return Promise.reject(new Error('No photos for this request.'));
         }
@@ -57,12 +56,21 @@ class ImageGallery extends Component {
             Math.trunc(totalHits / PER_PAGE) + !!(totalHits % PER_PAGE);
         }
 
+        const newImages = hits.map(
+          ({ id, tags, webformatURL, largeImageURL }) => ({
+            id,
+            tags,
+            webformatURL,
+            largeImageURL,
+          })
+        );
         this.setState(prevState => ({
-          images: [...prevState.images, ...hits],
+          images: [...prevState.images, ...newImages],
         }));
       })
       .catch(error => {
-        toast.error('Error: ', error.message);
+        toast.error(error.message);
+
         this.setState({ error: true });
         this.totalPages = 0;
         this.setState({ ...INITIAL_STATE });
@@ -93,11 +101,9 @@ class ImageGallery extends Component {
   }
 
   render() {
-    console.log('Total pages: ', this.totalPages);
     const { ImageGallery } = styles;
-    const { images, loading, currentId, error } = this.state;
+    const { images, loading, currentId } = this.state;
     const activeImage = this.getLargeImgData();
-    console.log('Props at Gallery', this.props.searchQuery);
 
     return (
       <>
@@ -124,20 +130,21 @@ class ImageGallery extends Component {
         </ul>
 
         {loading && <Loader />}
-        {this.state.page < this.totalPages && (
+        {!loading && this.state.page < this.totalPages && (
           <Button onClick={this.nextPageHandler} />
         )}
-        {error && (
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            newestOnTop={true}
-            closeOnClick={true}
-            draggable={true}
-            pauseOnHover={true}
-            theme="light"
-          />
-        )}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
       </>
     );
   }
