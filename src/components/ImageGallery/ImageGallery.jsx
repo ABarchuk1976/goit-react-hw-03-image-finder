@@ -1,4 +1,4 @@
-import React, { Component, Fragment } from 'react';
+import React, { Component } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PropTypes from 'prop-types';
@@ -10,56 +10,43 @@ import Modal from 'components/Modal';
 
 import { fetchImages } from 'services/images-api.service.js';
 import { PER_PAGE } from 'constants/images-api.constants.js';
+import { INITIAL_STATES } from 'constants/initial-states.constants';
 
 class ImageGallery extends Component {
   static propTypes = {
     searchQuery: PropTypes.string.isRequired,
   };
 
-  state = {
-    images: [],
-    loading: false,
-    currentId: null,
-    page: null,
-    error: false,
-  };
+  state = { ...INITIAL_STATES };
 
   totalPages = 0;
 
   componentDidMount() {
-    this.setState({ page: 1 });
+    const { searchQuery } = this.props;
+    this.setState({ search: searchQuery });
   }
 
   componentDidUpdate(prevProps, prevState) {
     const { searchQuery } = this.props;
-    const { page } = this.state;
-    const changedSearch = prevProps.searchQuery !== searchQuery;
+    const newSearch = prevProps.searchQuery !== searchQuery;
+
+    if (newSearch) {
+      this.setState({ ...INITIAL_STATES, search: searchQuery });
+    }
+
+    const { page, search } = this.state;
     const changedPage = prevState.page !== page;
-    let changesState = {};
-    const initialStates = {
-      images: [],
-      loading: false,
-      currentId: null,
-      page: null,
-      error: false,
-    };
+    const changedSearch = prevState.search !== search;
 
     if (changedSearch || changedPage) {
-      changesState = changedPage
-        ? { ...initialStates, page }
-        : { ...initialStates };
-
-      changesState = { ...changesState, loading: true };
-
-      this.setState(changesState);
-
+      this.setState({ loading: true });
       setTimeout(
         () =>
-          fetchImages(searchQuery, page)
+          fetchImages(search, page)
             .then(({ hits, totalHits }) => {
               if (!hits.length) {
                 return Promise.reject(
-                  new Error(`No photos for search query: ${searchQuery}`)
+                  new Error(`No photos for search query: ${search}`)
                 );
               }
 
