@@ -45,6 +45,7 @@ class ImageGallery extends Component {
           fetchImages(search, page)
             .then(({ hits, totalHits }) => {
               if (!hits.length) {
+                this.totalPages = 0;
                 return Promise.reject(
                   new Error(`No photos for search query: ${search}`)
                 );
@@ -69,8 +70,7 @@ class ImageGallery extends Component {
             })
             .catch(error => {
               toast.error(error.message);
-              this.totalPages = 0;
-              this.setState({ page: null, images: [], error: true });
+              this.setState({ error: true });
             })
             .finally(this.setState({ loading: false })),
         500
@@ -102,7 +102,7 @@ class ImageGallery extends Component {
 
   render() {
     const { ImageGallery } = styles;
-    const { images, loading, currentId, error } = this.state;
+    const { page, images, loading, currentId, error } = this.state;
     const activeImage = this.getLargeImgData();
 
     return (
@@ -133,7 +133,7 @@ class ImageGallery extends Component {
 
         {loading && <Loader />}
 
-        {!loading && this.state.page < this.totalPages && (
+        {!loading && page < this.totalPages && (
           <Button onClick={this.nextPageHandler} />
         )}
 

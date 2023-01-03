@@ -6,7 +6,9 @@ import {
   PER_PAGE,
 } from 'constants/images-api.constants';
 
-export function fetchImages(searchQuery, page = 1) {
+import axios from 'axios';
+
+export async function fetchImages(searchQuery, page = 1) {
   const params = {
     q: searchQuery,
     page,
@@ -17,12 +19,11 @@ export function fetchImages(searchQuery, page = 1) {
   };
   const searchAPI = API + '?' + new URLSearchParams(params);
 
-  return fetch(searchAPI).then(response => {
-    if (response.ok) {
-      return response.json();
-    }
-    return Promise.reject(
-      new Error(`No photos for search query: ${searchQuery}`)
-    );
-  });
+  try {
+    const response = await axios.get(searchAPI);
+
+    return response.data;
+  } catch (error) {
+    console.error(error);
+  }
 }
