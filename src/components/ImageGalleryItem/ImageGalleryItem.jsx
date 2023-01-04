@@ -7,16 +7,18 @@ class ImageGalleryItem extends PureComponent {
     id: PropTypes.number.isRequired,
     tags: PropTypes.string.isRequired,
     webformatURL: PropTypes.string.isRequired,
+    largeImageURL: PropTypes.string.isRequired,
   };
 
   render() {
-    const { webformatURL, tags, id } = this.props;
-    const { ImageGalleryItem__image } = styles;
+    const { largeImageURL, webformatURL, tags, id } = this.props;
+    const { ImageGalleryItem, ImageGalleryItem__image } = styles;
 
     return (
       <li className={ImageGalleryItem}>
         <img
           className={ImageGalleryItem__image}
+          large={largeImageURL}
           src={webformatURL}
           alt={tags}
           id={id}

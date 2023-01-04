@@ -9,7 +9,6 @@ import ImageGalleryItem from 'components/ImageGalleryItem';
 import Modal from 'components/Modal';
 
 import { fetchImages } from 'services/images-api.service.js';
-import { PER_PAGE } from 'constants/images-api.constants.js';
 import { INITIAL_STATES } from 'constants/initial-states.constants';
 
 class ImageGallery extends Component {
@@ -20,6 +19,8 @@ class ImageGallery extends Component {
   state = { ...INITIAL_STATES };
 
   totalPages = 0;
+  currentLargeImg = '';
+  currentAlt = '';
 
   componentDidMount() {
     const { searchQuery } = this.props;
@@ -45,15 +46,9 @@ class ImageGallery extends Component {
           fetchImages(search, page)
             .then(({ hits, totalHits }) => {
               if (!hits.length) {
-                this.totalPages = 0;
                 return Promise.reject(
                   new Error(`No photos for search query: ${search}`)
                 );
-              }
-
-              if (page === 1) {
-                this.totalPages =
-                  Math.trunc(totalHits / PER_PAGE) + !!(totalHits % PER_PAGE);
               }
 
               const newImages = hits.map(
@@ -66,11 +61,13 @@ class ImageGallery extends Component {
               );
               this.setState(prevState => ({
                 images: [...prevState.images, ...newImages],
+                totalHits,
               }));
             })
             .catch(error => {
               toast.error(error.message);
-              this.setState({ error: true });
+
+              this.setState({ totalHits: 0, error: true });
             })
             .finally(this.setState({ loading: false })),
         500
@@ -85,33 +82,30 @@ class ImageGallery extends Component {
   };
 
   closeHandler = () => {
-    this.setState({ currentId: null });
+    this.setState({ openedModal: false });
   };
 
   clickImgHandler = evt => {
-    const { nodeName, id } = evt.target;
+    const { target } = evt;
 
-    if (nodeName === 'IMG') this.setState({ currentId: id });
+    if (target.nodeName === 'IMG') {
+      this.currentLargeImg = target.getAttribute('large');
+      this.currentAlt = target.getAttribute('alt');
+      this.setState({ openedModal: true });
+    }
   };
-
-  getLargeImgData() {
-    const { images, currentId } = this.state;
-
-    return images.filter(image => String(image.id) === currentId)[0];
-  }
 
   render() {
     const { ImageGallery } = styles;
-    const { page, images, loading, currentId, error } = this.state;
-    const activeImage = this.getLargeImgData();
+    const { images, loading, error, openedModal, totalHits } = this.state;
 
     return (
       <>
-        {currentId && (
+        {openedModal && (
           <Modal onClose={this.closeHandler}>
             <img
-              src={activeImage.largeImageURL}
-              alt={activeImage.tags}
+              src={this.currentLargeImg}
+              alt={this.currentAlt}
               width="800"
               height="600"
             />
@@ -120,12 +114,13 @@ class ImageGallery extends Component {
 
         {!error && (
           <ul className={ImageGallery} onClick={this.clickImgHandler}>
-            {images.map(({ id, tags, webformatURL }) => (
+            {images.map(({ id, tags, webformatURL, largeImageURL }) => (
               <ImageGalleryItem
                 key={id}
                 id={id}
                 tags={tags}
                 webformatURL={webformatURL}
+                largeImageURL={largeImageURL}
               />
             ))}
           </ul>
@@ -133,8 +128,8 @@ class ImageGallery extends Component {
 
         {loading && <Loader />}
 
-        {!loading && page < this.totalPages && (
-          <Button onClick={this.nextPageHandler} />
+        {images.length < totalHits && (
+          <Button name="loadMore" onClick={this.nextPageHandler} />
         )}
 
         {error && <ToastContainer autoClose={3000} closeOnClick />}
